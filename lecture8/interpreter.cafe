@@ -35,7 +35,7 @@ mod! NAT-ERR principal-sort Nat {
     op _>_ : Nat&Err Nat&Err -> Bool&Err .
     op _>_ : ErrNat Nat&Err -> ErrBool .
     op _>_ : Nat&Err ErrNat -> ErrBool .
-    op if_then{_}else{_} : Bool Nat&Err Nat&Err -> Nat&Err .
+    op if_then{_}else{_} : Bool&Err Nat&Err Nat&Err -> Nat&Err .
     var NE : Nat&Err .
     var BE : Bool&Err .
     vars NE1 NE2 : Nat&Err .
@@ -53,11 +53,16 @@ mod! NAT-ERR principal-sort Nat {
     eq errNat rem NE = errNat .
     eq if true then {NE1} else {NE2} = NE1 .
     eq if false then {NE1} else {NE2} = NE2 .
+    eq if errBool then {NE1} else {NE2} = errNat .
     eq errNat < NE = errBool .
     eq NE < errNat = errBool .
     eq errNat > NE = errBool .
     eq NE > errNat = errBool .
 }
+-- 確認
+open NAT-ERR .
+red if errNat < 3 then {4} else {5} .
+close .
 
 mod* VAR principal-sort Var {
 [Var]
@@ -250,7 +255,7 @@ mod! ITRPRTR {
     eq evalExp(n(N),EV) = N .
     eq evalExp(V,EV) = lookup(EV,V) .
     eq evalExp(E1 + E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {evalExp(E1,EV) + evalExp(E2,EV)} .
-    eq evalExp(E1 - E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {evalExp(E1,EV) + evalExp(E2,EV)} .
+    eq evalExp(E1 - E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {sd(evalExp(E1,EV),evalExp(E2,EV))} .
     eq evalExp(E1 * E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {evalExp(E1,EV) * evalExp(E2,EV)} .
     eq evalExp(E1 / E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {evalExp(E1,EV) quo evalExp(E2,EV)} .
     eq evalExp(E1 % E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {evalExp(E1,EV) rem evalExp(E2,EV)} .

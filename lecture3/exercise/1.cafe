@@ -1,0 +1,94 @@
+mod! NATLIST {
+    pr(NAT-ERR)
+    [Nil NnNatList < NatList]
+    op nil : -> Nil {constr} .
+    op _|_ : Nat NatList -> NnNatList {constr} .
+    op tl : NatList -> NatList .
+    op _@_ : NatList NatList -> NatList .
+    op [_.._] : Nat Nat -> NatList .
+    op if_then {_} else {_} : Bool NatList NatList -> NatList .
+    op hd : Nil -> ErrNat .
+    op hd : NnNatList -> Nat .
+    op hd : NatList -> Nat&Err .
+    var X : Nat .
+    var Y : Nat .
+    var L : NatList .
+    var L2 : NatList .
+    eq tl(nil) = nil .
+    eq tl(X | L) = L .
+    eq nil @ L2 = L2 .
+    eq (X | L) @ L2 = X | (L @ L2) .
+    eq [X .. Y] = if X > Y then {nil} else {X | [X + 1 .. Y]} .
+    eq if true then {L} else {L2} = L .
+    eq if false then {L} else {L2} = L2 .
+    eq hd(nil) = errNat .
+    eq hd(X | L) = X .
+}
+
+set trace whole on
+open NATLIST .
+red (4 | 3 | nil) @ (2 | 1 | 0 | nil) .
+red hd(0 | 1 | nil) .
+red tl(0 | 1 | nil) .
+red [2 .. 5] .
+close
+set trace whole off
+
+set trace on
+open NATLIST .
+red hd(0 | 1 | nil) .
+red tl(0 | 1 | nil) .
+red [2 .. 5] .
+close
+set trace off
+
+set trace on
+open GCD .
+red gcd(2015,31031) .
+close
+set trace off
+
+mod! FACT {
+    pr(NAT)
+    op fact : Nat -> Nat .
+    var NzX : NzNat .
+    eq fact(0) = 1 .
+    eq fact(NzX) = NzX * fact(p NzX) .
+}
+
+mod! OEDC-FACT {
+    pr(NAT)
+    op cond : Bool Nat Nat -> Nat .
+    op g : Nat Nat -> Nat .
+    op oedc-fact : Nat -> Nat .
+    vars X Y : Nat . var NzX : NzNat .
+    eq cond(true,X,Y) = X .
+    eq cond(false,X,Y) = Y .
+    eq g(X,Y) = cond(X > Y, g(X,2 * Y) * g(sd(X,Y),2 * Y), X) .
+    eq oedc-fact(0) = 1 .
+    eq oedc-fact(NzX) = g(NzX,1) .
+}
+
+set trace on
+open FACT .
+red fact(5) .
+close
+set trace off
+
+set trace on
+open OEDC-FACT .
+red oedc-fact(5) .
+close
+set trace off
+
+set trace on
+open QSORT .
+red qsort(4 | 7 | 5 | 1 | 0 | 3 | 6 | 2 | nil) .
+close
+set trace off
+
+set trace on
+open ERATOSTHENES-SIEVE .
+red primesUpto(10) .
+close
+set trace off

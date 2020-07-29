@@ -1,0 +1,106 @@
+-- mod! DIVIDE {
+--     pr(NAT)
+--     op cond : Bool Nat Nat -> Nat .
+--     op divi : Nat Nat -> Nat .
+--     -- op ch : Nat -> Bool .
+--     vars X Y : Nat . var NzX : NzNat .
+--     -- var Z : Nat .
+--     eq cond(true,X,Y) = X .
+--     eq cond(false,X,Y) = Y .
+--     eq divi(X,Y) = cond(X < Y, 0, 1 + divi(sd(X,Y),Y)) .
+--     -- eq ch(2) = true .
+--     -- eq ch(3) = true .
+--     -- eq ch(5) = true .
+--     -- eq ch(Z) = cond(2 divides Z, ch(divi(Z,2)), cond(3 divides Z, ch(divi(Z,3)), cond(5 divides Z, ch(divi(Z,5)), false))) .
+-- }
+
+-- mod! HAMMING-NUMBERS {
+--     pr(NATLIST)
+--     pr(DIVIDE)
+--     op primesUpto : Nat -> NatList .
+--     op sieve : NatList -> NatList .
+--     op check : Nat NatList -> NatList .
+--     op check-hamming : Nat -> Bool .
+--     vars X Y Z : Nat .
+--     var NzX : NzNat .
+--     var L : NatList .
+--     eq check-hamming(2) = true .
+--     eq check-hamming(3) = true .
+--     eq check-hamming(5) = true .
+--     -- "No possible parse for RHS"
+--     eq check-hamming(Z) = if 2 divides Z then {check-hamming(divi(Z,2))} else {if 3 divides Z then {check-hamming(divi(Z,3))} else {if 5 divides Z then {check-hamming(divi(Z,5))} else {false}}} .
+--     eq primesUpto(X) = check(2,[3 .. X]) .
+--     eq check(0,L) = L .
+--     eq check(NzX,nil) = nil .
+--     eq check(NzX,Y | L) = if check-hamming(NzX) then {NzX | check(Y, L)} else {check(Y, L)} .
+-- }
+
+-- open HAMMING-NUMBERS .
+-- red primesUpto(10) .
+-- red primesUpto(20) .
+-- red primesUpto(50) .
+-- red primesUpto(100) .
+-- close
+
+-- mod! NATLIST {
+-- pr(NAT-ERR)
+-- [Nil NnNatList < NatList]
+-- op nil : -> Nil {constr} .
+-- op _|_ : Nat NatList -> NnNatList {constr} .
+-- op tl : NatList -> NatList .
+-- op _@_ : NatList NatList -> NatList .
+-- op [_.._] : Nat Nat -> NatList .
+-- op if_then {_} else {_} : Bool NatList NatList -> NatList .
+-- op hd : Nil -> ErrNat .
+-- op hd : NnNatList -> Nat .
+-- op hd : NatList -> Nat&Err .
+-- var X : Nat .
+-- var Y : Nat .
+-- var L : NatList .
+-- var L2 : NatList .
+-- eq tl(nil) = nil .
+-- eq tl(X | L) = L .
+-- eq nil @ L2 = L2 .
+-- eq (X | L) @ L2 = X | (L @ L2) .
+-- eq [X .. Y] = if X > Y then {nil} else {X | [X + 1 .. Y]} .
+-- eq if true then {L} else {L2} = L .
+-- eq if false then {L} else {L2} = L2 .
+-- eq hd(nil) = errNat .
+-- eq hd(X | L) = X .
+-- }
+
+mod! HAMMING {
+    pr(NATLIST)
+    op ham : Nat -> NatList .
+    op sham : NatList Nat -> NatList .
+    op _*(_) : Nat NatList -> NatList .
+    -- op two : NatList -> NatList .
+    -- op three : NatList -> NatList .
+    -- op five : NatList -> NatList .
+    op merge : NatList NatList -> NatList .
+    var X : Nat .
+    var Y : Nat .
+    var NzX : NzNat .
+    vars L LL RL : NatList .
+    eq ham(0) = nil .
+    eq ham(NzX) = sham(1 | nil, NzX) .
+    eq sham(X | L,NzX) = if NzX < X then {nil} else {X | sham(merge(merge(L,2 * (X | L)),merge(3 * (X | L),5 * (X | L))),NzX)} .
+    -- eq sham(X | L,NzX) = if NzX < X then {nil} else {X | sham(merge(merge(L,two(X | L)),merge(three(X | L),five(X | L))),NzX)} .
+    eq Y * (nil) = nil .
+    eq Y * (X | L) = Y * X | Y * (L) .
+    -- eq two(nil) = nil .
+    -- eq two(X | L) = 2 * X | two(L) .
+    -- eq three(nil) = nil .
+    -- eq three(X | L) = 3 * X | three(L) .
+    -- eq five(nil) = nil .
+    -- eq five(X | L) = 5 * X | five(L) .
+    eq merge(nil,RL) = RL .
+    eq merge(X | L,nil) = X | L .
+    eq merge(X | LL,Y | RL) = if X == Y then {X | merge(LL,RL)} else {if X < Y then{X | merge(LL,Y | RL)} else {Y | merge(X | LL,RL)}} .
+}
+
+open HAMMING .
+red ham(6) .
+red ham(10) .
+red ham(15) .
+close .

@@ -1,0 +1,15 @@
+-- 階乗
+open NAT .
+op fact : Nat -> Nat .
+var NzX : NzNat .
+eq fact(0) = 1 .
+eq fact(NzX) = NzX * fact(p NzX) .
+-- what follows
+red fact(0) .
+red fact(1) .
+red fact(10) .
+red fact(100) .
+red fact(1000) .
+-- red fact(10000) . -- stack overflow
+-- red fact(100000) . -- stack overflow
+close

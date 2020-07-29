@@ -1,0 +1,26 @@
+open NAT .
+op cond : Bool Nat Nat -> Nat .
+op ext-fib : Nat -> Nat .
+op sef1 : Nat -> Nat .
+op sef2 : Nat -> Nat .
+var n : NzNat .
+-- myfib
+eq sef2(0) = 2 .
+eq sef1(0) = 1 .
+eq ext-fib(0) = 0 .
+eq ext-fib(n) = sef1(p n) .
+eq sef1(n) = sef2(p n) .
+eq sef2(n) = ext-fib(n + 1) + ext-fib(n) + ext-fib(p n) .
+-- 
+red ext-fib(0) .
+red ext-fib(1) .
+red ext-fib(2) .
+red ext-fib(3) .
+red ext-fib(4) .
+red ext-fib(5) .
+red ext-fib(6) .
+red ext-fib(7) .
+red ext-fib(8) .
+red ext-fib(9) .
+red ext-fib(10) .
+close

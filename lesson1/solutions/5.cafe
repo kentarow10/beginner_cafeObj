@@ -1,0 +1,15 @@
+open NAT .
+op cond : Bool Nat Nat -> Nat .
+op my-fib : Nat -> Nat .
+var n : Nat .
+vars X Y : Nat . var NzX : Nat .
+-- cond
+eq cond(true,X,Y) = X .
+eq cond(false,X,Y) = Y .
+-- myfib
+eq my-fib(n) = cond(n > 2, my-fib(sd(n,1)) + my-fib(sd(n,2)) + my-fib(sd(n,3)), n) .
+-- 
+red my-fib(1) .
+red my-fib(10) .
+red my-fib(20) .
+close

@@ -1,0 +1,208 @@
+1>[1] rule: eq interpret(S) = eval(S,empEnv)
+    { S |-> ((x := n(1) ;) (for y n(1) n(10) { (x := (y * x) ;) })) }
+1<[1] (interpret(((x := n(1) ;) (for y n(1) n(10) { (x := (y * x) ;) })))):Env&Err --> (eval(((x := n(1) ;) (for y n(1) n(10) { (x := (y * x) ;) })),empEnv)):Env&Err
+
+1>[2] apply trial #1
+-- rule: eq eval((S1 S2),EV) = eval(S2,eval(S1,EV))
+    { S1 |-> (x := n(1) ;), S2 |-> (for y n(1) n(10) { (x := (y * x) ;) }), EV |-> empEnv }
+1>[2] match success #1
+1<[2] (eval(((x := n(1) ;) (for y n(1) n(10) { (x := (y * x) ;) })),empEnv)):Env&Err --> (eval((for y n(1) n(10) { (x := (y * x) ;) }),eval((x := n(1) ;),empEnv))):Env&Err
+
+1>[3] rule: eq eval((V := E ;),EV) = evalAssign(V,evalExp(E,EV),EV)
+    { V |-> x, EV |-> empEnv, E |-> n(1) }
+1<[3] (eval((x := n(1) ;),empEnv)):Env&Err --> (evalAssign(x,evalExp(n(1),empEnv),empEnv)):Env&Err
+
+1>[4] rule: eq evalExp(n(N),EV) = N
+    { N |-> 1, EV |-> empEnv }
+1<[4] (evalExp(n(1),empEnv)):Nat&Err --> (1):NzNat
+
+1>[5] rule: eq evalAssign(V,N,EV) = update(EV,V,N)
+    { V |-> x, EV |-> empEnv, N |-> 1 }
+1<[5] (evalAssign(x,1,empEnv)):Env&Err --> (update(empEnv,x,1)):Env
+
+1>[6] rule: eq update(empEnv,K2:Var,V2:Nat) = ((K2 , V2) | empEnv)
+    { K2:Var |-> x, V2:Nat |-> 1 }
+1<[6] (update(empEnv,x,1)):Env --> ((x , 1) | empEnv):Env
+
+1>[7] rule: eq eval((for V E1 E2 { S1 }),EV) = evalWhile(n(evalExp(((V < E2) || (V === E2)),EV)),(S1 (V := (V + n(1)) ;)),eval((V := E1 ;),EV))
+    { V |-> y, EV |-> ((x , 1) | empEnv), S1 |-> (x := (y * x) ;), E2 |-> n(10), E1 |-> n(1) }
+1<[7] (eval((for y n(1) n(10) { (x := (y * x) ;) }),((x , 1) | empEnv))):Env&Err --> (evalWhile(n(evalExp(((y < n(10)) || (y === n(10))),((x , 1) | empEnv))),((x := (y * x) ;) (y := (y + n(1)) ;)),eval((y := n(1) ;),((x , 1) | empEnv)))):?Env&Err
+
+1>[8] rule: eq evalExp((E1 || E2),EV) = (if ((evalExp(E1,EV) == errNat) or (evalExp(E2,EV) == errNat)) then { errNat } else { (if ((evalExp(E1,EV) == 1) or (evalExp(E2,EV) == 1)) then { 1 } else { 0 }) })
+    { E1 |-> (y < n(10)), EV |-> ((x , 1) | empEnv), E2 |-> (y === n(10)) }
+1<[8] (evalExp(((y < n(10)) || (y === n(10))),((x , 1) | empEnv))):Nat&Err --> (if ((evalExp((y < n(10)),((x , 1) | empEnv)) == errNat) or (evalExp((y === n(10)),((x , 1) | empEnv)) == errNat)) then { errNat } else { (if ((evalExp((y < n(10)),((x , 1) | empEnv)) == 1) or (evalExp((y === n(10)),((x , 1) | empEnv)) == 1)) then { 1 } else { 0 }) }):Nat&Err
+
+1>[9] rule: eq evalExp((E1 < E2),EV) = (if ((evalExp(E1,EV) == errNat) or (evalExp(E2,EV) == errNat)) then { errNat } else { (if (evalExp(E1,EV) < evalExp(E2,EV)) then { 1 } else { 0 }) })
+    { E1 |-> y, EV |-> ((x , 1) | empEnv), E2 |-> n(10) }
+1<[9] (evalExp((y < n(10)),((x , 1) | empEnv))):Nat&Err --> (if ((evalExp(y,((x , 1) | empEnv)) == errNat) or (evalExp(n(10),((x , 1) | empEnv)) == errNat)) then { errNat } else { (if (evalExp(y,((x , 1) | empEnv)) < evalExp(n(10),((x , 1) | empEnv))) then { 1 } else { 0 }) }):?Nat&Err
+
+1>[10] rule: eq evalExp(V,EV) = lookup(EV,V)
+    { V |-> y, EV |-> ((x , 1) | empEnv) }
+1<[10] (evalExp(y,((x , 1) | empEnv))):Nat&Err --> (lookup(((x , 1) | empEnv),y)):Nat&Err
+
+1>[11] rule: eq lookup(((K:Var , V:Nat) | T:Env),K2:Var) = (if (K == K2) then { V } else { lookup(T,K2) })
+    { K:Var |-> x, K2:Var |-> y, T:Env |-> empEnv, V:Nat |-> 1 }
+1<[11] (lookup(((x , 1) | empEnv),y)):Nat&Err --> (if (x == y) then { 1 } else { lookup(empEnv,y) }):Nat&Err
+
+1>[12] rule: eq (CXU:*Cosmos* == CYU:*Cosmos*) = #!! (coerce-to-bool
+                                                      (term-equational-equal
+                                                       cxu cyu))
+    { CXU:*Cosmos* |-> x, CYU:*Cosmos* |-> y }
+1<[12] (x == y):Bool --> (false):Bool
+
+1>[13] rule: eq (if false then { NE1 } else { NE2 }) = NE2
+    { NE1 |-> 1, NE2 |-> lookup(empEnv,y) }
+1<[13] (if false then { 1 } else { lookup(empEnv,y) }):Nat&Err --> (lookup(empEnv,y)):Nat&Err
+
+1>[14] rule: eq lookup(empEnv,K2:Var) = errNat
+    { K2:Var |-> y }
+1<[14] (lookup(empEnv,y)):Nat&Err --> (errNat):ErrNat
+
+1>[15] rule: eq (CXU:*Cosmos* == CYU:*Cosmos*) = #!! (coerce-to-bool
+                                                      (term-equational-equal
+                                                       cxu cyu))
+    { CXU:*Cosmos* |-> errNat, CYU:*Cosmos* |-> errNat }
+1<[15] (errNat == errNat):Bool --> (true):Bool
+
+1>[16] rule: eq evalExp(n(N),EV) = N
+    { N |-> 10, EV |-> ((x , 1) | empEnv) }
+1<[16] (evalExp(n(10),((x , 1) | empEnv))):Nat&Err --> (10):NzNat
+
+1>[17] rule: eq (CXU:*Cosmos* == CYU:*Cosmos*) = #!! (coerce-to-bool
+                                                      (term-equational-equal
+                                                       cxu cyu))
+    { CXU:*Cosmos* |-> 10, CYU:*Cosmos* |-> errNat }
+1<[17] (10 == errNat):Bool --> (false):Bool
+
+1>[18] rule: eq (false or A:Bool) = A
+    { A:Bool |-> true }
+1<[18] (true or false):Bool --> (true):Bool
+
+1>[19] rule: eq evalExp(V,EV) = lookup(EV,V)
+    { V |-> y, EV |-> ((x , 1) | empEnv) }
+1<[19] (evalExp(y,((x , 1) | empEnv))):Nat&Err --> (lookup(((x , 1) | empEnv),y)):Nat&Err
+
+1>[20] rule: eq lookup(((K:Var , V:Nat) | T:Env),K2:Var) = (if (K == K2) then { V } else { lookup(T,K2) })
+    { K:Var |-> x, K2:Var |-> y, T:Env |-> empEnv, V:Nat |-> 1 }
+1<[20] (lookup(((x , 1) | empEnv),y)):Nat&Err --> (if (x == y) then { 1 } else { lookup(empEnv,y) }):Nat&Err
+
+1>[21] rule: eq (CXU:*Cosmos* == CYU:*Cosmos*) = #!! (coerce-to-bool
+                                                      (term-equational-equal
+                                                       cxu cyu))
+    { CXU:*Cosmos* |-> x, CYU:*Cosmos* |-> y }
+1<[21] (x == y):Bool --> (false):Bool
+
+1>[22] rule: eq (if false then { NE1 } else { NE2 }) = NE2
+    { NE1 |-> 1, NE2 |-> lookup(empEnv,y) }
+1<[22] (if false then { 1 } else { lookup(empEnv,y) }):Nat&Err --> (lookup(empEnv,y)):Nat&Err
+
+1>[23] rule: eq lookup(empEnv,K2:Var) = errNat
+    { K2:Var |-> y }
+1<[23] (lookup(empEnv,y)):Nat&Err --> (errNat):ErrNat
+
+1>[24] rule: eq evalExp(n(N),EV) = N
+    { N |-> 10, EV |-> ((x , 1) | empEnv) }
+1<[24] (evalExp(n(10),((x , 1) | empEnv))):Nat&Err --> (10):NzNat
+
+1>[25] rule: eq (CXU:*Cosmos* == CYU:*Cosmos*) = #!! (coerce-to-bool
+                                                      (term-equational-equal
+                                                       cxu cyu))
+    { CXU:*Cosmos* |-> (if true then { errNat } else { (if (errNat < 10) then { 1 } else { 0 }) }), CYU:*Cosmos* |-> errNat }
+1<[25] ((if true then { errNat } else { (if (errNat < 10) then { 1 } else { 0 }) }) == errNat):Bool --> (false):Bool
+
+1>[26] rule: eq evalExp((E1 === E2),EV) = (if ((evalExp(E1,EV) == errNat) or (evalExp(E2,EV) == errNat)) then { errNat } else { (if (evalExp(E1,EV) == evalExp(E2,EV)) then { 1 } else { 0 }) })
+    { E1 |-> y, EV |-> ((x , 1) | empEnv), E2 |-> n(10) }
+1<[26] (evalExp((y === n(10)),((x , 1) | empEnv))):Nat&Err --> (if ((evalExp(y,((x , 1) | empEnv)) == errNat) or (evalExp(n(10),((x , 1) | empEnv)) == errNat)) then { errNat } else { (if (evalExp(y,((x , 1) | empEnv)) == evalExp(n(10),((x , 1) | empEnv))) then { 1 } else { 0 }) }):Nat&Err
+
+1>[27] rule: eq evalExp(V,EV) = lookup(EV,V)
+    { V |-> y, EV |-> ((x , 1) | empEnv) }
+1<[27] (evalExp(y,((x , 1) | empEnv))):Nat&Err --> (lookup(((x , 1) | empEnv),y)):Nat&Err
+
+1>[28] rule: eq lookup(((K:Var , V:Nat) | T:Env),K2:Var) = (if (K == K2) then { V } else { lookup(T,K2) })
+    { K:Var |-> x, K2:Var |-> y, T:Env |-> empEnv, V:Nat |-> 1 }
+1<[28] (lookup(((x , 1) | empEnv),y)):Nat&Err --> (if (x == y) then { 1 } else { lookup(empEnv,y) }):Nat&Err
+
+1>[29] rule: eq (CXU:*Cosmos* == CYU:*Cosmos*) = #!! (coerce-to-bool
+                                                      (term-equational-equal
+                                                       cxu cyu))
+    { CXU:*Cosmos* |-> x, CYU:*Cosmos* |-> y }
+1<[29] (x == y):Bool --> (false):Bool
+
+1>[30] rule: eq (if false then { NE1 } else { NE2 }) = NE2
+    { NE1 |-> 1, NE2 |-> lookup(empEnv,y) }
+1<[30] (if false then { 1 } else { lookup(empEnv,y) }):Nat&Err --> (lookup(empEnv,y)):Nat&Err
+
+1>[31] rule: eq lookup(empEnv,K2:Var) = errNat
+    { K2:Var |-> y }
+1<[31] (lookup(empEnv,y)):Nat&Err --> (errNat):ErrNat
+
+1>[32] rule: eq (CXU:*Cosmos* == CYU:*Cosmos*) = #!! (coerce-to-bool
+                                                      (term-equational-equal
+                                                       cxu cyu))
+    { CXU:*Cosmos* |-> errNat, CYU:*Cosmos* |-> errNat }
+1<[32] (errNat == errNat):Bool --> (true):Bool
+
+1>[33] rule: eq evalExp(n(N),EV) = N
+    { N |-> 10, EV |-> ((x , 1) | empEnv) }
+1<[33] (evalExp(n(10),((x , 1) | empEnv))):Nat&Err --> (10):NzNat
+
+1>[34] rule: eq (CXU:*Cosmos* == CYU:*Cosmos*) = #!! (coerce-to-bool
+                                                      (term-equational-equal
+                                                       cxu cyu))
+    { CXU:*Cosmos* |-> 10, CYU:*Cosmos* |-> errNat }
+1<[34] (10 == errNat):Bool --> (false):Bool
+
+1>[35] rule: eq (false or A:Bool) = A
+    { A:Bool |-> true }
+1<[35] (true or false):Bool --> (true):Bool
+
+1>[36] rule: eq (if true then { NE1 } else { NE2 }) = NE1
+    { NE1 |-> errNat, NE2 |-> (if (evalExp(y,((x , 1) | empEnv)) == evalExp(n(10),((x , 1) | empEnv))) then { 1 } else { 0 }) }
+1<[36] (if true then { errNat } else { (if (evalExp(y,((x , 1) | empEnv)) == evalExp(n(10),((x , 1) | empEnv))) then { 1 } else { 0 }) }):Nat&Err --> (errNat):ErrNat
+
+1>[37] rule: eq (CXU:*Cosmos* == CYU:*Cosmos*) = #!! (coerce-to-bool
+                                                      (term-equational-equal
+                                                       cxu cyu))
+    { CXU:*Cosmos* |-> errNat, CYU:*Cosmos* |-> errNat }
+1<[37] (errNat == errNat):Bool --> (true):Bool
+
+1>[38] rule: eq (false or A:Bool) = A
+    { A:Bool |-> true }
+1<[38] (false or true):Bool --> (true):Bool
+
+1>[39] rule: eq (if true then { NE1 } else { NE2 }) = NE1
+    { NE1 |-> errNat, NE2 |-> (if ((evalExp((y < n(10)),((x , 1) | empEnv)) == 1) or (evalExp((y === n(10)),((x , 1) | empEnv)) == 1)) then { 1 } else { 0 }) }
+1<[39] (if true then { errNat } else { (if ((evalExp((y < n(10)),((x , 1) | empEnv)) == 1) or (evalExp((y === n(10)),((x , 1) | empEnv)) == 1)) then { 1 } else { 0 }) }):Nat&Err --> (errNat):ErrNat
+
+1>[40] rule: eq eval((V := E ;),EV) = evalAssign(V,evalExp(E,EV),EV)
+    { V |-> y, EV |-> ((x , 1) | empEnv), E |-> n(1) }
+1<[40] (eval((y := n(1) ;),((x , 1) | empEnv))):Env&Err --> (evalAssign(y,evalExp(n(1),((x , 1) | empEnv)),((x , 1) | empEnv))):Env&Err
+
+1>[41] rule: eq evalExp(n(N),EV) = N
+    { N |-> 1, EV |-> ((x , 1) | empEnv) }
+1<[41] (evalExp(n(1),((x , 1) | empEnv))):Nat&Err --> (1):NzNat
+
+1>[42] rule: eq evalAssign(V,N,EV) = update(EV,V,N)
+    { V |-> y, EV |-> ((x , 1) | empEnv), N |-> 1 }
+1<[42] (evalAssign(y,1,((x , 1) | empEnv))):Env&Err --> (update(((x , 1) | empEnv),y,1)):Env
+
+1>[43] rule: eq update(((K:Var , V:Nat) | T:Env),K2:Var,V2:Nat) = (if (K == K2) then { ((K , V2) | T) } else { ((K , V) | update(T,K2,V2)) })
+    { K:Var |-> x, V2:Nat |-> 1, K2:Var |-> y, T:Env |-> empEnv, V:Nat |-> 1 }
+1<[43] (update(((x , 1) | empEnv),y,1)):Env --> (if (x == y) then { ((x , 1) | empEnv) } else { ((x , 1) | update(empEnv,y,1)) }):Env&Err
+
+1>[44] rule: eq (CXU:*Cosmos* == CYU:*Cosmos*) = #!! (coerce-to-bool
+                                                      (term-equational-equal
+                                                       cxu cyu))
+    { CXU:*Cosmos* |-> x, CYU:*Cosmos* |-> y }
+1<[44] (x == y):Bool --> (false):Bool
+
+1>[45] rule: eq update(empEnv,K2:Var,V2:Nat) = ((K2 , V2) | empEnv)
+    { K2:Var |-> y, V2:Nat |-> 1 }
+1<[45] (update(empEnv,y,1)):Env --> ((y , 1) | empEnv):Env
+
+1>[46] rule: eq (if false then { EV1 } else { EV2 }) = EV2
+    { EV1 |-> ((x , 1) | empEnv), EV2 |-> ((x , 1) | ((y , 1) | empEnv)) }
+1<[46] (if false then { ((x , 1) | empEnv) } else { ((x , 1) | ((y , 1) | empEnv)) }):Env&Err --> ((x , 1) | ((y , 1) | empEnv)):Env
+
+(evalWhile(n(errNat),((x := (y * x) ;) (y := (y + n(1)) ;)),((x , 1) | ((y , 1) | empEnv)))):?Env&Err
+(0.0000 sec for parse, 0.0020 sec for 46 rewrites + 125 matches)

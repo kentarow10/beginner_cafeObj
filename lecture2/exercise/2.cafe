@@ -1,0 +1,36 @@
+mod! FACT {
+    pr(NAT)
+    op fact : Nat -> Nat .
+    var NzX : NzNat .
+    eq fact(0) = 1 .
+    eq fact(NzX) = NzX * fact(p NzX) .
+}
+
+mod! OEDC-FACT {
+    pr(NAT)
+    op cond : Bool Nat Nat -> Nat .
+    op g : Nat Nat -> Nat .
+    op oedc-fact : Nat -> Nat .
+    vars X Y : Nat . var NzX : NzNat .
+    eq cond(true,X,Y) = X .
+    eq cond(false,X,Y) = Y .
+    eq g(X,Y) = cond(X > Y, g(X,2 * Y) * g(sd(X,Y),2 * Y), X) .
+    eq oedc-fact(0) = 1 .
+    eq oedc-fact(NzX) = g(NzX,1) .
+}
+
+open FACT .
+red fact(0) .
+red fact(1) .
+red fact(10) .
+red fact(100) .
+red fact(1000) .
+close
+
+open OEDC-FACT .
+red oedc-fact(0) .
+red oedc-fact(1) .
+red oedc-fact(10) .
+red oedc-fact(100) .
+red oedc-fact(1000) .
+close

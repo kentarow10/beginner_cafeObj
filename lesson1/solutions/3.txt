@@ -1,0 +1,15 @@
+Explain in which way oedc‐fact(5) is computed.
+
+there are some equations as follows
+oedc‐fact(5) = g(5,1)
+g(5,1) = g(5,2) * g(4,2)
+
+g(5,2) = g(5,4) * 3
+g(5,4) = 5 * 1
+
+g(4,2) = 4 * 2
+
+so, oedc‐fact(5) is computed as follows
+oedc‐fact(5) = ((5*1)*3)*(4*2)
+
+The number of call stacks can be reduced.

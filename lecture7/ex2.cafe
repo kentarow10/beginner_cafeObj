@@ -1,0 +1,276 @@
+mod! MULTISET(E :: TRIV) {
+    [Elt.E < MSet]
+    op emp : -> MSet {constr} .
+    op _ _ : MSet MSet -> MSet {constr assoc comm id: emp} .
+    op if_then{_}else{_} : Bool MSet MSet -> MSet .
+    vars MS1 MS2 : MSet .
+    eq if true then {MS1} else {MS2} = MS1 .
+    eq if false then {MS1} else {MS2} = MS2 .
+}
+
+mod! GLIST(E :: TRIV) {
+    [Nil NnList < List]
+    op nil : -> Nil {constr} .
+    op _|_ : Elt.E List -> List {constr} .
+    op if_then{_}else{_} : Bool List List -> List .
+    vars L1 L2 : List .
+    -- if_then{_}else{_}
+    eq if true then {L1} else {L2} = L1 .
+    eq if false then {L1} else {L2} = L2 .
+}
+
+mod* INF-LIST(E :: TRIV) {
+    pr(NAT)
+    pr(GLIST(E))
+    [InfList]
+    op _|_ : Elt.E InfList -> InfList {strat: (1 0)} .
+    op take : InfList Nat -> List .
+    op if_then{_}else{_} : Bool InfList InfList -> InfList .
+    var X : Elt.E .
+    vars IL IL2 : InfList .
+    var NzN : NzNat .
+    -- take
+    eq take(IL,0) = nil .
+    eq take(X | IL, NzN) = X | take(IL,p NzN) .
+    -- if_then{_}else{_}
+    eq if true then {IL} else {IL2} = IL .
+    eq if false then {IL} else {IL2} = IL2 .
+}
+
+mod! BOOL-IF {
+    op if_then{_}else{_} : Bool Bool Bool -> Bool .
+    vars B1 B2 : Bool .
+    eq if true then {B1} else {B2} = B1 .
+    eq if false then {B1} else {B2} = B2 .
+}
+
+mod! NAT-IF {
+    pr(NAT)
+    op if_then{_}else{_} : Bool Nat Nat -> Nat .
+    vars N1 N2 : Nat .
+    eq if true then {N1} else {N2} = N1 .
+    eq if false then {N1} else {N2} = N2 .
+}
+
+-- revised simulator t-2
+
+mod! TID {
+    [Tid]
+    ops t1 t2 : -> Tid {constr} .
+    op if_then{_}else{_} : Bool Tid Tid -> Tid .
+    vars T1 T2 : Tid .
+    eq if true then {T1} else {T2} = T1 .
+    eq if false then {T1} else {T2} = T2 .
+}
+
+mod! LOC {
+    [Loc]
+    ops rs cs : -> Loc {constr} .
+}
+
+mod! OCOM {
+    pr(TID)
+    pr(LOC)
+    [OCom]
+    op (locked:_) : Bool -> OCom {constr} .
+    op (pc[_]:_) : Tid Loc -> OCom {constr} .
+}
+
+mod! STATE principal-sort State {
+    pr(OCOM)
+    pr(NAT-IF)
+    pr(BOOL-IF)
+    [OCom < State]
+    op void : -> State {constr} .
+    op _ _ : State State -> State {constr assoc comm id: void} .
+    op # : State Tid -> Nat .
+    op isValid : State -> Bool .
+    op #cs : State -> Nat .
+    vars T T2 : Tid .
+    vars B B2 : Bool .
+    var S : State .
+    vars L L2 : Loc .
+    -- #
+    eq #(void,T) = 0 .
+    eq #((locked: B) S,T) = #(S,T) .
+    eq #((pc[T2]: L) S,T) = if T2 == T then {1 + #(S,T)} else {#(S,T)} .
+    -- isValid
+    eq isValid(void) = false .
+    eq isValid((locked: B)) = false .
+    eq isValid((pc[T]: L)) = false .
+    eq isValid((pc[T]: L) (locked: B)) = true .
+    eq isValid((locked: B) (locked: B2) S) = false .
+    eq isValid((pc[T]: L) (pc[T2]: L2) S) = if #((pc[T2]: L2) S,T) > 0 then {false} else {isValid((pc[T2]: L2) S)} .
+    -- #cs
+    eq #cs(void) = 0 .
+    eq #cs((locked: B) S) = #cs(S) .
+    eq #cs((pc[T2]: rs) S) = #cs(S) .
+    eq #cs((pc[T2]: cs) S) = 1 + #cs(S) .
+}
+
+mod! FMUTEX {
+    pr(STATE)
+    op trans : State Tid -> State .
+    var T : Tid .
+    var S : State .
+    var B : Bool .
+    ceq trans((pc[T]: rs) (locked: true) S,T) = (pc[T]: rs) (locked: true) S if isValid((pc[T]: rs) (locked: true) S) .
+    ceq trans((pc[T]: rs) (locked: false) S,T) = (pc[T]: cs) (locked: true) S if isValid((pc[T]: rs) (locked: false) S) .
+    ceq trans((pc[T]: cs) (locked: B) S,T) = (pc[T]: rs) (locked: false) S if isValid((pc[T]: cs) (locked: B) S) .
+    ceq trans(S,T) = S if (not isValid(S)) or (not #(S,T) > 0) .
+}
+
+mod! COMP {
+    pr(INF-LIST(STATE) * {
+        sort InfList -> Comp,
+        sort List -> FComp} )
+}
+
+mod! SCHED {
+    pr(NAT)
+    pr(INF-LIST(TID) * {sort InfList -> Sched} )
+    op sched : Nat -> Sched .
+    var N : Nat .
+    eq sched(N) = if 2 divides N then {t1 | sched(N quo 2)} else {t2 | sched(N quo 2)} .
+}
+
+mod! SIM {
+    pr(FMUTEX)
+    pr(COMP)
+    pr(SCHED)
+    op sim : State Nat -> Comp .
+    op sub-sim : State Sched -> Comp .
+    op sim-check : State Nat Nat -> FComp .
+    op sub-sim-check : State Sched Nat -> FComp .
+    op mutex : State -> Bool .
+    var S : State .
+    vars N D : Nat .
+    var NzD : NzNat .
+    var T : Tid .
+    var TIL : Sched .
+    eq sim(S,N) = sub-sim(S,sched(N)) .
+    eq sub-sim(S,T | TIL) = S | sub-sim(trans(S,T),TIL) .
+    eq sim-check(S,N,D) = sub-sim-check(S,sched(N),D) .
+    eq sub-sim-check(S,T | TIL,0) = S | nil .
+    eq sub-sim-check(S,T | TIL,NzD) = if mutex(S) then {S | sub-sim-check(trans(S,T),TIL,p NzD)} else {S | nil} .
+    eq mutex(S) = #cs(S) < 2 .
+}
+
+open SIM .
+red take(sim((locked: false) (pc[t1]: rs) (pc[t2]: rs),123),10) .
+red take(sim((locked: false) (pc[t1]: rs) (pc[t2]: rs),1234),10) .
+red take(sim((locked: false) (pc[t1]: rs) (pc[t2]: rs),12345),10) .
+red sim-check((locked: false) (pc[t1]: rs) (pc[t2]: rs),123,10) .
+red sim-check((locked: false) (pc[t1]: rs) (pc[t2]: rs),1234,10) .
+red sim-check((locked: false) (pc[t1]: rs) (pc[t2]: rs),12345,10) .
+close
+
+-- revised simulator t-4
+
+mod! TID {
+    [Tid]
+    ops t1 t2 t3 t4 : -> Tid {constr} .
+    vars T1 T2 T3 T4 : Tid .
+}
+
+mod! LOC {
+    [Loc]
+    ops rs cs : -> Loc {constr} .
+}
+
+mod! OCOM {
+    pr(TID)
+    pr(LOC)
+    [OCom]
+    op (locked:_) : Bool -> OCom {constr} .
+    op (pc[_]:_) : Tid Loc -> OCom {constr} .
+}
+
+mod! STATE principal-sort State {
+    pr(OCOM)
+    pr(NAT-IF)
+    pr(BOOL-IF)
+    [OCom < State]
+    op void : -> State {constr} .
+    op _ _ : State State -> State {constr assoc comm id: void} .
+    op # : State Tid -> Nat .
+    op isValid : State -> Bool .
+    op #cs : State -> Nat .
+    vars T T2 : Tid .
+    vars B B2 : Bool .
+    var S : State .
+    vars L L2 : Loc .
+    -- #
+    eq #(void,T) = 0 .
+    eq #((locked: B) S,T) = #(S,T) .
+    eq #((pc[T2]: L) S,T) = if T2 == T then {1 + #(S,T)} else {#(S,T)} .
+    -- isValid
+    eq isValid(void) = false .
+    eq isValid((locked: B)) = false .
+    eq isValid((pc[T]: L)) = false .
+    eq isValid((pc[T]: L) (locked: B)) = true .
+    eq isValid((locked: B) (locked: B2) S) = false .
+    eq isValid((pc[T]: L) (pc[T2]: L2) S) = if #((pc[T2]: L2) S,T) > 0 then {false} else {isValid((pc[T2]: L2) S)} .
+    -- #cs
+    eq #cs(void) = 0 .
+    eq #cs((locked: B) S) = #cs(S) .
+    eq #cs((pc[T2]: rs) S) = #cs(S) .
+    eq #cs((pc[T2]: cs) S) = 1 + #cs(S) .
+}
+
+mod! FMUTEX {
+    pr(STATE)
+    op trans : State Tid -> State .
+    var T : Tid .
+    var S : State .
+    var B : Bool .
+    ceq trans((pc[T]: rs) (locked: true) S,T) = (pc[T]: rs) (locked: true) S if isValid((pc[T]: rs) (locked: true) S) .
+    ceq trans((pc[T]: rs) (locked: false) S,T) = (pc[T]: cs) (locked: true) S if isValid((pc[T]: rs) (locked: false) S) .
+    ceq trans((pc[T]: cs) (locked: B) S,T) = (pc[T]: rs) (locked: false) S if isValid((pc[T]: cs) (locked: B) S) .
+    ceq trans(S,T) = S if (not isValid(S)) or (not #(S,T) > 0) .
+}
+
+mod! COMP {
+    pr(INF-LIST(STATE) * {
+        sort InfList -> Comp,
+        sort List -> FComp} )
+}
+
+mod! SCHED {
+    pr(NAT)
+    pr(INF-LIST(TID) * {sort InfList -> Sched} )
+    op sched : Nat -> Sched .
+    var N : Nat .
+    eq sched(N) = if 4 divides N then {t4 | sched(N quo 4)} else {if 3 divides N then {t3 | sched(N quo 4)} else {if 2 divides N then {t2 | sched(N quo 4)} else {t1 | sched(N quo 4)}}} .
+}
+
+mod! SIM {
+    pr(FMUTEX)
+    pr(COMP)
+    pr(SCHED)
+    op sim : State Nat -> Comp .
+    op sub-sim : State Sched -> Comp .
+    op sim-check : State Nat Nat -> FComp .
+    op sub-sim-check : State Sched Nat -> FComp .
+    op mutex : State -> Bool .
+    var S : State .
+    vars N D : Nat .
+    var NzD : NzNat .
+    var T : Tid .
+    var TIL : Sched .
+    eq sim(S,N) = sub-sim(S,sched(N)) .
+    eq sub-sim(S,T | TIL) = S | sub-sim(trans(S,T),TIL) .
+    eq sim-check(S,N,D) = sub-sim-check(S,sched(N),D) .
+    eq sub-sim-check(S,T | TIL,0) = S | nil .
+    eq sub-sim-check(S,T | TIL,NzD) = if mutex(S) then {S | sub-sim-check(trans(S,T),TIL,p NzD)} else {S | nil} .
+    eq mutex(S) = #cs(S) < 2 .
+}
+
+open SIM .
+red take(sim((locked: false) (pc[t1]: rs) (pc[t2]: rs) (pc[t3]: rs) (pc[t4]: rs),123),10) .
+red take(sim((locked: false) (pc[t1]: rs) (pc[t2]: rs) (pc[t3]: rs) (pc[t4]: rs),1234),10) .
+red take(sim((locked: false) (pc[t1]: rs) (pc[t2]: rs) (pc[t3]: rs) (pc[t4]: rs),12345),10) .
+red sim-check((locked: false) (pc[t1]: rs) (pc[t2]: rs) (pc[t3]: rs) (pc[t4]: rs),123,10) .
+red sim-check((locked: false) (pc[t1]: rs) (pc[t2]: rs) (pc[t3]: rs) (pc[t4]: rs),1234,10) .
+red sim-check((locked: false) (pc[t1]: rs) (pc[t2]: rs) (pc[t3]: rs) (pc[t4]: rs),12345,10) .
+close

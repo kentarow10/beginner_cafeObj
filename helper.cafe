@@ -1,0 +1,36 @@
+-- EltとErrがソートとして宣言されたトリビアル
+mod* TRIV-ERR-IF {
+    [Elt Err < Elt&Err]
+    op err : -> Err .
+    op if_then{_}else{_} : Bool Elt&Err Elt&Err -> Elt&Err .
+}
+
+mod* TRIV-ERR {
+    [Elt Err < Elt&Err]
+    op err : -> Err .
+}
+
+-- bool型のエラーハンドル付き
+mod! BOOL-ERR {
+    [Bool ErrBool < Bool&Err]
+    op errBool : -> ErrBool {constr} .
+    op if_then{_}else{_} : Bool Bool Bool -> Bool .
+    vars B1 B2 : Bool .
+    -- if_then{_}else{_}
+    eq if true then {B1} else {B2} = B1 .
+    eq if false then {B1} else {B2} = B2 .
+}
+
+mod! NAT-ERR principal-sort Nat {
+    pr(NAT)
+    [Nat ErrNat < Nat&Err]
+    op errNat : -> ErrNat {constr} .
+    op _*_ : Nat&Err Nat&Err -> Nat&Err .
+    op if_then{_}else{_} : Bool Nat&Err Nat&Err -> Nat&Err .
+    vars NE NE1 NE2 : Nat&Err .
+    eq errNat * NE = errNat .
+    eq NE * errNat = errNat .
+    eq if true then {NE1} else {NE2} = NE1 .
+    eq if false then {NE1} else {NE2} = NE2 .
+}
+

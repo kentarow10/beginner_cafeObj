@@ -1,0 +1,320 @@
+-- 確認
+open NAT .
+red 3 < 4 .
+close .
+
+mod! BOOL-ERR {
+    [Bool ErrBool < Bool&Err]
+    op errBool : -> ErrBool {constr} .
+    op if_then{_}else{_} : Bool Bool Bool -> Bool .
+    vars B1 B2 : Bool .
+    -- if_then{_}else{_}
+    eq if true then {B1} else {B2} = B1 .
+    eq if false then {B1} else {B2} = B2 .
+}
+
+mod! NAT-ERR principal-sort Nat {
+    pr(NAT)
+    pr(BOOL-ERR)
+    [Nat ErrNat < Nat&Err]
+    op errNat : -> ErrNat {constr} .
+    op _+_ : Nat&Err Nat&Err -> Nat&Err .
+    op _-_ : Nat&Err Nat&Err -> Nat&Err .
+    op _*_ : Nat&Err Nat&Err -> Nat&Err .
+    op _quo_ : Nat&Err Zero -> ErrNat .
+    op _quo_ : Nat&Err ErrNat -> ErrNat .
+    op _quo_ : ErrNat Nat&Err -> ErrNat .
+    op _quo_ : Nat&Err Nat&Err -> Nat&Err .
+    op _rem_ : Nat&Err Zero -> ErrNat .
+    op _rem_ : Nat&Err ErrNat -> ErrNat .
+    op _rem_ : ErrNat Nat&Err -> ErrNat .
+    op _rem_ : Nat&Err Nat&Err -> Nat&Err .
+    op _<_ : Nat&Err Nat&Err -> Bool&Err .
+    op _<_ : ErrNat Nat&Err -> ErrBool .
+    op _<_ : Nat&Err ErrNat -> ErrBool .
+    op _>_ : Nat&Err Nat&Err -> Bool&Err .
+    op _>_ : ErrNat Nat&Err -> ErrBool .
+    op _>_ : Nat&Err ErrNat -> ErrBool .
+    op if_then{_}else{_} : Bool Nat&Err Nat&Err -> Nat&Err .
+    var NE : Nat&Err .
+    var BE : Bool&Err .
+    vars NE1 NE2 : Nat&Err .
+    eq errNat + NE = errNat .
+    eq NE + errNat = errNat .
+    eq errNat - NE = errNat .
+    eq NE - errNat = errNat .
+    eq errNat * NE = errNat .
+    eq NE * errNat = errNat .
+    eq NE quo 0 = errNat .
+    eq NE quo errNat = errNat .
+    eq errNat quo NE = errNat .
+    eq NE rem 0 = errNat .
+    eq NE rem errNat = errNat .
+    eq errNat rem NE = errNat .
+    eq if true then {NE1} else {NE2} = NE1 .
+    eq if false then {NE1} else {NE2} = NE2 .
+    eq errNat < NE = errBool .
+    eq NE < errNat = errBool .
+    eq errNat > NE = errBool .
+    eq NE > errNat = errBool .
+}
+
+mod* VAR principal-sort Var {
+[Var]
+}
+
+mod! EXP {
+    pr(VAR)
+    pr(NAT)
+    [Var < Exp]
+    op n : Nat -> Exp {constr} .
+    op _+_ : Exp Exp -> Exp {constr prec: 33 l-assoc} .
+    op _-_ : Exp Exp -> Exp {constr prec: 33 l-assoc} .
+    op _*_ : Exp Exp -> Exp {constr prec: 31 l-assoc} .
+    op _/_ : Exp Exp -> Exp {constr prec: 31 l-assoc} .
+    op _%_ : Exp Exp -> Exp {constr prec: 31 l-assoc} .
+    op _===_ : Exp Exp -> Exp {constr prec: 40 l-assoc} .
+    op _=!=_ : Exp Exp -> Exp {constr prec: 40 l-assoc} .
+    op _<_ : Exp Exp -> Exp {constr prec: 40 l-assoc} .
+    op _>_ : Exp Exp -> Exp {constr prec: 40 l-assoc} .
+    op _&&_ : Exp Exp -> Exp {constr prec: 50 l-assoc} .
+    op _||_ : Exp Exp -> Exp {constr prec: 55 l-assoc} .
+}
+
+-- Env ---------------------------------------------------------------
+
+mod* TRIV-ERR-IF {
+    [Elt Err < Elt&Err]
+    op err : -> Err .
+    op if_then{_}else{_} : Bool Elt&Err Elt&Err -> Elt&Err .
+}
+
+mod! GLIST-ERR(E :: TRIV-ERR-IF) {
+    [Nil NnList < List]
+    [List ErrList < List&Err]
+    op errList : -> ErrList {constr} .
+    op nil : -> Nil {constr} .
+    op _|_ : Elt.E List -> List {constr} .
+    op _|_ : Elt&Err.E List&Err -> List&Err .
+    op _@_ : List List -> List .
+    op _@_ : List&Err List&Err -> List&Err .
+    op if_then{_}else{_} : Bool List&Err List&Err -> List&Err .
+    var X : Elt.E .
+    var XE : Elt&Err.E .
+    vars L L2 : List .
+    vars LE LE2 : List&Err .
+    -- _|_
+    eq err.E | LE = errList .
+    eq XE | errList = errList .
+    -- _@_
+    eq nil @ L2 = L2 .
+    eq (X | L) @ L2 = X | (L @ L2) .
+    eq errList @ LE = errList .
+    eq LE @ errList = errList .
+    -- if_then{_}else{_}
+    eq if true then {LE} else {LE2} = LE .
+    eq if false then {LE} else {LE2} = LE2 .
+}
+
+mod! PAIR(FE :: TRIV, SE :: TRIV) {
+    [Pair]
+    op (_,_) : Elt.FE Elt.SE -> Pair {constr} .
+}
+
+mod! ENTRY(K :: TRIV, V :: TRIV-ERR-IF) {
+    pr(PAIR(K,V) * {sort Pair -> Entry})
+    [Entry ErrEntry < Entry&Err]
+    op errEntry : -> ErrEntry {constr} .
+    op (_,_) : Elt.K Elt&Err.V -> Entry&Err .
+    op if_then{_}else{_} : Bool Entry&Err Entry&Err -> Entry&Err .
+    var K : Elt.K .
+    vars EE1 EE2 : Entry&Err .
+    eq (K,err.V) = errEntry .
+    eq if true then {EE1} else {EE2} = EE1 .
+    eq if false then {EE1} else {EE2} = EE2 .
+}
+
+mod! TABLE {
+    pr(BOOL-ERR)
+    pr(GLIST-ERR(E <= view from TRIV-ERR-IF to ENTRY {
+    sort Elt -> Entry,
+    sort Err -> ErrEntry,
+    sort Elt&Err -> Entry&Err,
+    op err -> errEntry,
+    op (if_then{_}else{_}) -> (if_then{_}else{_})} )
+    * { sort List -> Table,
+        sort Nil -> EmpTable,
+        sort NnList -> NeTable,
+        sort ErrList -> ErrTable,
+        sort List&Err -> Table&Err,
+        op errList -> errTable,
+        op nil -> empTable } )
+    op singleton : Elt.K Elt.V -> Table .
+    op singleton : Elt.K Elt&Err.V -> Table&Err .
+    op isReg : Table Elt.K -> Bool .
+    op isReg : Table&Err Elt.K -> Bool&Err .
+    op lookup : Table Elt.K -> Elt&Err.V .
+    op lookup : Table&Err Elt.K -> Elt&Err.V .
+    op update : Table Elt.K Elt.V -> Table .
+    op update : Table&Err Elt.K Elt&Err.V -> Table&Err .
+    op insert : Table Elt.K Elt.V -> Table&Err .
+    op insert : Table&Err Elt.K Elt&Err.V -> Table&Err .
+    op remove : Table Elt.K -> Table .
+    op remove : Table&Err Elt.K -> Table&Err .
+    op delete : Table Elt.K -> Table&Err .
+    op delete : Table&Err Elt.K -> Table&Err .
+    vars K K2 : Elt.K .
+    vars V V2 : Elt.V .
+    vars VE VE2 : Elt&Err.V .
+    var T : Table .
+    var TE : Table&Err .
+    eq singleton(K,err.V) = errTable .
+    eq singleton(K,V) = (K,V) | empTable .
+    eq isReg(errTable,K2) = errBool .
+    eq isReg(empTable,K2) = false .
+    eq isReg((K,V) | T,K2) = if K == K2 then {true} else {isReg(T,K2)} .
+    eq lookup(errTable,K2) = err.V .
+    eq lookup(empTable,K2) = err.V .
+    eq lookup((K,V) | T,K2) = if K == K2 then {V} else {lookup(T,K2)} .
+    eq update(errTable,K2,VE2) = errTable .
+    eq update(TE,K2,err.V) = errTable .
+    eq update(empTable,K2,V2) = (K2,V2) | empTable .
+    eq update((K,V) | T,K2,V2) = if K == K2 then {(K,V2) | T} else {(K,V) | update(T,K2,V2)} .
+    eq insert(errTable,K2,VE) = errTable .
+    eq insert(TE,K2,err.V) = errTable .
+    eq insert(T,K2,V2) = if isReg(T,K2) then {errTable} else {(K2,V2) | T} .
+    eq remove(errTable,K2) = errTable .
+    eq remove(empTable,K2) = empTable .
+    eq remove((K,V) | T,K2) = if K == K2 then {T} else {(K,V) | remove(T,K2)} .
+    eq delete(errTable,K2) = errTable .
+    eq delete(T,K2) = if isReg(T,K2) then {remove(T,K2)} else {errTable} .
+}
+
+view TRIV2VAR from TRIV to VAR {
+    sort Elt -> Var,
+}
+
+view TRIV2NAT from TRIV-ERR-IF to NAT-ERR {
+    sort Elt -> Nat,
+    sort Err -> ErrNat,
+    sort Elt&Err -> Nat&Err,
+    op err -> errNat,
+    op (if_then{_}else{_}) -> (if_then{_}else{_})
+}
+
+mod! ENV {
+    pr(TABLE(K <= TRIV2VAR, V <= TRIV2NAT) * {
+    sort Table -> Env,
+    sort EmpTable -> EmpEnv,
+    sort NeTable -> NeEnv,
+    sort ErrTable -> ErrEnv,
+    sort Table&Err -> Env&Err,
+    op empTable -> empEnv,
+    op errTable -> errEnv } )
+}
+
+-- -------------------------------------------------------------------
+
+mod! STM {
+    pr(EXP)
+    [Stm]
+    op estm : -> Stm {constr} .
+    op _:=_; : Var Exp -> Stm {constr} .
+    op if_{_}else{_} : Exp Stm Stm -> Stm {constr} .
+    op while_{_} : Exp Stm -> Stm {constr} .
+    op for_ _ _{_} : Var Exp Exp Stm -> Stm {constr} .
+    op _ _ : Stm Stm -> Stm {constr prec: 60 id: estm l-assoc} .
+}
+
+mod! ITRPRTR {
+    pr(NAT-ERR)
+    pr(STM)
+    pr(ENV)
+    op evalExp : Exp Env&Err -> Nat&Err .
+    op interpret : Stm -> Env&Err .
+    op eval : Stm Env&Err -> Env&Err .
+    op evalAssign : Var Nat&Err Env&Err -> Env&Err .
+    op evalIf : Nat&Err Stm Stm Env&Err -> Env&Err .
+    op evalWhile : Exp Stm Env&Err -> Env&Err .
+    vars E E1 E2 : Exp .
+    var V : Var .
+    var EV : Env .
+    vars EV1 EV2 : Env .
+    var N : Nat .
+    var NzN : NzNat .
+    vars NE1 NE2 : Nat&Err .
+    vars S S1 S2 : Stm .
+    var B : Bool .
+    -- evalExp
+    eq evalExp(E,errEnv) = errNat .
+    eq evalExp(n(N),EV) = N .
+    eq evalExp(V,EV) = lookup(EV,V) .
+    eq evalExp(E1 + E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {evalExp(E1,EV) + evalExp(E2,EV)} .
+    eq evalExp(E1 - E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {evalExp(E1,EV) + evalExp(E2,EV)} .
+    eq evalExp(E1 * E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {evalExp(E1,EV) * evalExp(E2,EV)} .
+    eq evalExp(E1 / E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {evalExp(E1,EV) quo evalExp(E2,EV)} .
+    eq evalExp(E1 % E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {evalExp(E1,EV) rem evalExp(E2,EV)} .
+    eq evalExp(E1 === E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {if evalExp(E1,EV) == evalExp(E2,EV) then {1} else {0}} .
+    eq evalExp(E1 =!= E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {if evalExp(E1,EV) == evalExp(E2,EV) then {0} else {1}} .
+    eq evalExp(E1 < E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {if evalExp(E1,EV) < evalExp(E2,EV) then {1} else {0}} .
+    eq evalExp(E1 > E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {if evalExp(E1,EV) > evalExp(E2,EV) then {1} else {0}} .
+    eq evalExp(E1 && E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {if evalExp(E1,EV) == 1 and evalExp(E2,EV) == 1 then {1} else {0}} .
+    eq evalExp(E1 || E2,EV) = if evalExp(E1,EV) == errNat or evalExp(E2,EV) == errNat then {errNat} else {if evalExp(E1,EV) == 1 or evalExp(E2,EV) == 1 then {1} else {0}} .
+    -- evalAssign
+    eq evalAssign(V,N,errEnv) = errEnv .
+    eq evalAssign(V,errNat,EV) = errEnv .
+    eq evalAssign(V,N,EV) = update(EV,V,N) .
+    -- evalIf
+    eq evalIf(N,S1,S2,errEnv) = errEnv .
+    eq evalIf(errNat,S1,S2,EV) = errEnv .
+    eq evalIf(1,S1,S2,EV) = eval(S1,EV) .
+    eq evalIf(0,S1,S2,EV) = eval(S2,EV) .
+    -- evalWhile
+    eq evalWhile(E,S1,errEnv) = errEnv .
+    eq evalWhile(E,S1,EV) = if evalExp(E,EV) == errNat then {errEnv} else {if evalExp(E,EV) == 0 then {EV} else {evalWhile(E,S1,eval(S1,EV))}} .
+    -- eval
+    eq eval(S,errEnv) = errEnv .
+    eq eval(estm,EV) = EV .
+    eq eval(V := E ;,EV) = evalAssign(V,evalExp(E,EV),EV) .
+    eq eval(if E {S1} else {S2},EV) = evalIf(evalExp(E,EV),S1,S2,EV) .
+    eq eval(while E {S1},EV) = evalWhile(E,S1,EV) .
+    eq eval(for V E1 E2 {S1},EV) = eval(V := E1 ; while V < E2 || V === E2 {S1 V := V + n(1) ;},EV) .
+    eq eval(S1 S2,EV) = eval(S2,eval(S1,EV)) .
+    -- interpret
+    eq interpret(S) = eval(S,empEnv) .
+}
+
+open EXP .
+ops x y z : -> Var .
+red x === x .
+red x + y - z * n(2) / x === n(10) + x * y || x =!= y && n(1) + x + y > z .
+close
+
+set trace on
+open ITRPRTR .
+ops x y z : -> Var .
+red interpret(x := n(1) ; for y n(1) n(10) {
+x := y * x ;
+}) .
+close .
+set trace off
+
+open ITRPRTR .
+ops x y z : -> Var .
+red interpret(x := n(24) ; y := n(30) ;
+while y =!= n(0) {
+z := x % y ; x := y ; y := z ;
+}) .
+close .
+
+open ITRPRTR .
+ops x y z tmp : -> Var .
+red interpret(x := n(20000000000000000) ; y := n(0) ; z := x ;
+while y =!= z {
+if ((z - y) % n(2)) === n(0) {
+tmp := y + (z - y) / n(2) ;
+} else { tmp := y + ((z - y) / n(2)) + n(1) ; }
+if tmp * tmp > x { z := tmp - n(1) ; }
+else { y := tmp ; }
+}) .
+close .

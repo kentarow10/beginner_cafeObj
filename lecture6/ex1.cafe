@@ -1,0 +1,397 @@
+
+-- E‐strategy
+
+-- 最初に第一引数(=(FE,SE,TE))のreduceが行われる
+mod! NAT-TRIPLE-IMLM {
+    pr(NAT)
+    [NatTriple]
+    op (_,_,_) : Nat Nat Nat -> NatTriple {constr} .
+    op 1st : NatTriple -> Nat {strat: (1 0)} .
+    vars FE SE TE : Nat .
+    eq 1st((FE,SE,TE)) = FE .
+}
+
+-- 最初に全体のreduceが行われる
+-- 下のtestでは、NAT-TRIPLE-Cまで差異は見られない。
+mod! NAT-TRIPLE-OMLM {
+    pr(NAT)
+    [NatTriple]
+    op (_,_,_) : Nat Nat Nat -> NatTriple {constr} .
+    op 1st : NatTriple -> Nat {strat: (0 1 0)} .
+    vars FE SE TE : Nat .
+    eq 1st((FE,SE,TE)) = FE .
+}
+mod! NAT-TRIPLE-A {
+    pr(NAT)
+    [NatTriple]
+    op (_,_,_) : Nat Nat Nat -> NatTriple {constr} .
+    op 1st : NatTriple -> Nat {strat: (0 1)} .
+    op 2nd : NatTriple -> Nat {strat: (0 1)} .
+    op 3rd : NatTriple -> Nat {strat: (0 1)} .
+    vars FE SE TE : Nat .
+    eq 1st((FE,SE,TE)) = FE .
+    eq 2nd((FE,SE,TE)) = SE .
+    eq 3rd((FE,SE,TE)) = TE .
+}
+mod! NAT-TRIPLE-B {
+    pr(NAT)
+    [NatTriple]
+    op (_,_,_) : Nat Nat Nat -> NatTriple {constr} .
+    op 1st : NatTriple -> Nat {strat: (0 0)} .
+    op 2nd : NatTriple -> Nat {strat: (0 0)} .
+    op 3rd : NatTriple -> Nat {strat: (0 0)} .
+    vars FE SE TE : Nat .
+    eq 1st((FE,SE,TE)) = FE .
+    eq 2nd((FE,SE,TE)) = SE .
+    eq 3rd((FE,SE,TE)) = TE .
+}
+mod! NAT-TRIPLE-C {
+    pr(NAT)
+    [NatTriple]
+    op (_,_,_) : Nat Nat Nat -> NatTriple {constr} .
+    op 1st : NatTriple -> Nat {strat: (0)} .
+    op 2nd : NatTriple -> Nat {strat: (0)} .
+    op 3rd : NatTriple -> Nat {strat: (0)} .
+    vars FE SE TE : Nat .
+    eq 1st((FE,SE,TE)) = FE .
+    eq 2nd((FE,SE,TE)) = SE .
+    eq 3rd((FE,SE,TE)) = TE .
+}
+
+mod! NAT-TRIPLE {
+    pr(NAT)
+    [NatTriple]
+    op (_,_,_) : Nat Nat Nat -> NatTriple {constr} .
+    op 1st : NatTriple -> Nat .
+    vars FE SE TE : Nat .
+    eq 1st((FE,SE,TE)) = FE .
+}
+
+mod! NAT-IF {
+    pr(NAT)
+    op if_then{_}else{_} : Bool Nat Nat -> Nat {strat: (1 0 2 3)} .
+    vars N1 N2 : Nat .
+    eq if true then {N1} else {N2} = N1 .
+    eq if false then {N1} else {N2} = N2 .
+}
+-- N2,N1,Bool,全体の順に評価されるif文
+mod! NAT-IF-A {
+    pr(NAT)
+    op if_then{_}else{_} : Bool Nat Nat -> Nat {strat: (3 2 1 0)} .
+    vars N1 N2 : Nat .
+    eq if true then {N1} else {N2} = N1 .
+    eq if false then {N1} else {N2} = N2 .
+}
+
+mod! GLIST(E :: TRIV) {
+    [Nil NnList < List]
+    op nil : -> Nil {constr} .
+    op _|_ : Elt.E List -> List {constr} .
+    op if_then{_}else{_} : Bool List List -> List .
+    vars L1 L2 : List .
+    eq if true then {L1} else {L2} = L1 .
+    eq if false then {L1} else {L2} = L2 .
+}
+
+mod* INF-LIST(E :: TRIV) {
+    pr(NAT)
+    pr(GLIST(E))
+    [InfList]
+    op _|_ : Elt.E InfList -> InfList {strat: (1 0)} .
+    op take : InfList Nat -> List .
+    op drop : InfList Nat -> InfList .
+    op _@_ : List InfList -> InfList .
+    op zip : InfList InfList -> InfList .
+    vars X Y : Elt.E .
+    vars IL IL2 : InfList .
+    var NzN : NzNat .
+    var N : Nat .
+    var L : List .
+    eq take(IL,0) = nil .
+    eq take(X | IL, NzN) = X | take(IL,p NzN) .
+    eq drop(IL,0) = IL .
+    eq drop(X | IL, NzN) = drop(IL,p NzN) .
+    eq nil @ IL = IL .
+    eq (X | L) @ IL = X | (L @ IL) .
+    eq zip(X | IL,Y | IL2) = X | Y | zip(IL,IL2) .
+}
+
+mod! NAT-INF-LIST {
+    pr(INF-LIST(NAT)) .
+    op mkNILFrom : Nat -> InfList .
+    op if_then{_}else{_} : Bool InfList InfList -> InfList .
+    var N : Nat .
+    vars IL1 IL2 : InfList .
+    eq mkNILFrom(N) = N | mkNILFrom(N + 1) .
+    eq if true then {IL1} else {IL2} = IL1 .
+    eq if false then {IL1} else {IL2} = IL2 .
+}
+
+mod! ERATOSTHENES-SIEVE {
+    pr(NAT-INF-LIST)
+    op primes : -> InfList .
+    op sieve : InfList -> InfList .
+    op check : Nat InfList -> InfList .
+    vars X Y : Nat .
+    var NzX : NzNat .
+    var IL : InfList .
+    -- primes
+    eq primes = sieve(mkNILFrom(2)) .
+    -- sieve
+    eq sieve(X | IL) = X | sieve(check(X,IL)) .
+    -- check
+    eq check(0,IL) = IL .
+    eq check(NzX,Y | IL) = if NzX divides Y then {check(NzX,IL)} else {Y | check(NzX,IL)} .
+}
+
+mod! HAMMING {
+    pr(NAT-INF-LIST)
+    op ham : -> InfList .
+    op 2* : InfList -> InfList .
+    op 3* : InfList -> InfList .
+    op 5* : InfList -> InfList .
+    op merge : InfList InfList -> InfList .
+    vars X Y : Nat .
+    vars IL IL2 : InfList .
+    -- ham
+    eq ham = 1 | merge(merge(2*(ham),3*(ham)),5*(ham)) .
+    -- 2*
+    eq 2*(X | IL) = 2 * X | 2*(IL) .
+    -- 3*
+    eq 3*(X | IL) = 3 * X | 3*(IL) .
+    -- 5*
+    eq 5*(X | IL) = 5 * X | 5*(IL) .
+    -- merge
+    eq merge(X | IL,Y | IL2) = if X < Y then {X | merge(IL,Y | IL2)} else {if Y < X then {Y | merge(X | IL,IL2)} else {X | merge(IL,IL2)} } .
+}
+
+-- Simulator of a Mutex Protocol
+
+mod! LOC {
+    [Loc]
+    ops rs ms cs : -> Loc {constr} .
+}
+
+mod! STATE principal-sort State {
+    pr(LOC)
+    [State]
+    op (locked:_,pc1:_,pc2:_) : Bool Loc Loc -> State {constr} .
+}
+
+mod! TID {
+    [Tid]
+    ops t1 t2 : -> Tid {constr} .
+    op if_then{_}else{_} : Bool Tid Tid -> Tid .
+    vars T1 T2 : Tid .
+    eq if true then {T1} else {T2} = T1 .
+    eq if false then {T1} else {T2} = T2 .
+}
+
+mod! FMUTEX {
+    pr(STATE)
+    pr(TID)
+    op trans : State Tid -> State .
+    vars L1 L2 : Loc .
+    var B : Bool .
+    -- t1
+    eq trans((locked: true,pc1: rs,pc2: L2),t1) = (locked: true,pc1: rs,pc2: L2) .
+    eq trans((locked: false,pc1: rs,pc2: L2),t1) = (locked: false,pc1: ms,pc2: L2) .
+    eq trans((locked: B,pc1: ms,pc2: L2),t1) = (locked: true,pc1: cs,pc2: L2) .
+    eq trans((locked: B,pc1: cs,pc2: L2),t1) = (locked: false,pc1: rs,pc2: L2) .
+    -- t2
+    eq trans((locked: true,pc1: L1,pc2: rs),t2) = (locked: true,pc1: L1,pc2: rs) .
+    eq trans((locked: false,pc1: L1,pc2: rs),t2) = (locked: false,pc1: L1,pc2: ms) .
+    eq trans((locked: B,pc1: L1,pc2: ms),t2) = (locked: true,pc1: L1,pc2: cs) .
+    eq trans((locked: B,pc1: L1,pc2: cs),t2) = (locked: false,pc1: L1,pc2: rs) .
+}
+
+mod! COMP {
+    pr(INF-LIST(STATE)
+    * {sort InfList -> Comp, sort List -> FComp} )
+}
+
+mod! NAT-ERR {
+    pr(NAT)
+    [Nat ErrNat < Nat&Err]
+    op errNat : -> ErrNat {constr} .
+    op p_ : Zero -> ErrNat .
+    op p_ : ErrNat -> ErrNat .
+    op p_ : Nat&Err -> Nat&Err .
+    op _quo_ : Nat&Err Zero -> ErrNat .
+    op _quo_ : Nat&Err ErrNat -> ErrNat .
+    op _quo_ : ErrNat Nat&Err -> ErrNat .
+    op _quo_ : Nat&Err Nat&Err -> Nat&Err .
+    var NE : Nat&Err .
+    eq p 0 = errNat .
+    eq p errNat = errNat .
+    eq NE quo 0 = errNat .
+    eq NE quo errNat = errNat .
+    eq errNat quo NE = errNat .
+}
+
+mod! SCHED {
+    pr(NAT)
+    pr(INF-LIST(TID) * {sort InfList -> Sched} )
+    op sched : Nat -> Sched .
+    op if_then{_}else{_} : Bool Sched Sched -> Sched .
+    var N : Nat .
+    vars S1 S2 : Sched .
+    eq if true then {S1} else {S2} = S1 .
+    eq if false then {S1} else {S2} = S2 .
+    eq sched(N) = if 2 divides N then {t1 | sched(N quo 2)} else {t2 | sched(N quo 2)} .
+}
+
+mod! SIM {
+    pr(FMUTEX)
+    pr(COMP)
+    pr(SCHED)
+    op sim : State Nat -> Comp .
+    op sub-sim : State Sched -> Comp .
+    var S : State .
+    var N : Nat .
+    var NzD : NzNat .
+    var T : Tid .
+    var TIL : Sched .
+    eq sim(S,N) = sub-sim(S,sched(N)) .
+    eq sub-sim(S,T | TIL) = S | sub-sim(trans(S,T),TIL) .
+}
+
+mod! SIM-V2 {
+    pr(FMUTEX)
+    pr(COMP)
+    pr(SCHED)
+    op sim : State Nat -> Comp .
+    op sub-sim : State Sched -> Comp .
+    op mutex : State -> Bool .
+    op sim-check : State Nat Nat -> FComp .
+    op sub-sim-check : State Sched Nat -> FComp .
+    var D : Nat .
+    var NzD : NzNat .
+    var S : State .
+    var N : Nat .
+    var T : Tid .
+    var TIL : Sched .
+    vars L1 L2 : Loc .
+    var B : Bool .
+    eq sim(S,N) = sub-sim(S,sched(N)) .
+    eq sub-sim(S,T | TIL) = S | sub-sim(trans(S,T),TIL) .
+    eq mutex((locked: B,pc1: L1,pc2: L2)) = not(L1 == cs and L2 == cs) .
+    eq sim-check(S,N,D) = sub-sim-check(S,sched(N),D) .
+    eq sub-sim-check(S,T | TIL,0) = S | nil .
+    eq sub-sim-check(S,T | TIL,NzD) = if mutex(S) then {S | sub-sim-check(trans(S,T),TIL,p NzD)} else {S | nil} .
+}
+
+-- test
+
+-- inner most left most
+set trace whole on
+open NAT-TRIPLE-IMLM .
+red 1st((1 + 1,2 + 2,3 + 3)) .
+close
+set trace whole off
+
+-- outter most left most
+set trace whole on
+open NAT-TRIPLE-OMLM .
+red 1st((1 + 1,2 + 2,3 + 3)) .
+close
+set trace whole off
+
+set trace whole on
+open NAT-TRIPLE-A .
+red 1st((1 + 1,2 + 2,3 + 3)) .
+red 2nd((1 + 1,2 + 2,3 + 3)) .
+red 3rd((1 + 1,2 + 2,3 + 3)) .
+close
+set trace whole off
+
+set trace whole on
+open NAT-TRIPLE-B .
+red 1st((1 + 1,2 + 2,3 + 3)) .
+red 2nd((1 + 1,2 + 2,3 + 3)) .
+red 3rd((1 + 1,2 + 2,3 + 3)) .
+close
+set trace whole off
+
+set trace whole on
+open NAT-TRIPLE-C .
+red 1st((1 + 1,2 + 2,3 + 3)) .
+red 2nd((1 + 1,2 + 2,3 + 3)) .
+red 3rd((1 + 1,2 + 2,3 + 3)) .
+close
+set trace whole off
+
+show NAT-IF .
+
+set trace whole on
+open NAT-IF .
+red if 3 < 4 then { 2 + 2 } else { 1 + 2 }.
+close
+set trace whole off
+
+set trace whole on
+open NAT-IF-A .
+red if 3 < 4 then { 2 + 2 } else { 1 + 2 }.
+close
+set trace whole off
+
+open NAT-INF-LIST .
+red mkNILFrom(0) .
+red take(mkNILFrom(0),10) .
+red drop(mkNILFrom(0),10) .
+red take(drop(mkNILFrom(0),997),10) .
+red take(take(mkNILFrom(0),10) @ drop(mkNILFrom(0),10),20) .
+red take(mkNILFrom(0),20) .
+red zip(mkNILFrom(0),mkNILFrom(0)) .
+red take(drop(zip(mkNILFrom(0),mkNILFrom(0)),997),10) .
+close
+
+show GLIST .
+
+open ERATOSTHENES-SIEVE .
+red primes .
+red take(primes,10) .
+red take(primes,20) .
+red take(primes,50) .
+red take(primes,100) .
+close
+
+open HAMMING .
+red ham .
+red take(ham,10) .
+red take(ham,20) .
+red take(ham,50) .
+red take(ham,100) .
+close
+
+-- --
+
+open SCHED .
+red take(sched(123),10) .
+red take(sched(1234),10) .
+red take(sched(12345),10) .
+close
+
+set trace whole on
+open SCHED .
+red take(sched(12345),10) .
+close
+set trace whole off
+
+set trace whole on
+open SCHED .
+red take(sched(123),10) .
+close
+set trace whole off
+
+open SIM-V2 .
+red take(sim((locked: false,pc1: rs,pc2: rs),123),10) .
+red take(sim((locked: false,pc1: rs,pc2: rs),1234),10) .
+red take(sim((locked: false,pc1: rs,pc2: rs),12345),10) .
+close
+
+open SIM-V2 .
+red sim-check((locked: false,pc1: rs,pc2: rs),123,10) .
+red sim-check((locked: false,pc1: rs,pc2: rs),1234,10) .
+red sim-check((locked: false,pc1: rs,pc2: rs),12345,10) .
+close

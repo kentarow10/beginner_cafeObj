@@ -1,0 +1,11 @@
+-- 階乗
+open NAT .
+op _! : Nat -> Nat .
+var NzX : NzNat .
+eq 0 ! = 1 .
+eq NzX ! = NzX * ((p NzX) !) .
+-- what follows
+red 0 ! .
+red 1 ! .
+red 10 ! .
+close

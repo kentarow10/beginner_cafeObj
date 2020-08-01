@@ -1,3 +1,3 @@
-# Let ' s try cafeObj !
+# Let ' s try cafeOBJ !
 
 https://cafeobj.org/documentation/

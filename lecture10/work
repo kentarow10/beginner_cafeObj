@@ -1,0 +1,13 @@
+genForExp(E) 
+@
+(jumpOnCond(2) |
+(jump(len(compile(S1)) + 2) | iln))
+@
+generate(S1)
+@
+(jump(len(compile(S2)) + 1) | iln )
+@
+generate(S2) .
+
+
+genForExp(E) @ (jumpOnCond(2) | (jump(len(compile(S1)) + 2) | iln)) @ generate(S1) @ (jump(len(compile(S2)) + 1) | iln ) @ generate(S2) .

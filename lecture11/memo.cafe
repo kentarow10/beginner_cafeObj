@@ -1,0 +1,195 @@
+mod! PNAT1 {
+    pr(BOOL)
+    [PNat]
+    op 0 : -> PNat {constr} .
+    op s : PNat -> PNat {constr} .
+    op _+_ : PNat PNat -> PNat .
+    op _*_ : PNat PNat -> PNat .
+    op fact1 : PNat -> PNat .
+    op fact2 : PNat -> PNat .
+    op sfact2 : PNat PNat -> PNat .
+    op sum1 : PNat -> PNat .
+    op sum2 : PNat -> PNat .
+    op ssum2 : PNat PNat -> PNat .
+    vars X Y Z : PNat .
+    eq (0 = s(Y)) = false .
+    eq (s(X) = s(Y)) = (X = Y) .
+    eq 0 + Y = Y .
+    eq s(X) + Y = s(X + Y) .
+    eq 0 * Y = 0 .
+    eq s(X) * Y = (X * Y) + Y .
+    eq fact1(0) = s(0) .
+    eq fact1(s(X)) = s(X) * fact1(X) .
+    eq fact2(X) = sfact2(X,s(0)) .
+    eq sfact2(0,Y) = Y .
+    eq sfact2(s(X),Y) = sfact2(X,s(X) * Y) .
+    eq sum1(0) = 0 .
+    eq sum1(s(X)) = s(X) + sum1(X) .
+    eq sum2(X) = ssum2(X,0) .
+    eq ssum2(0,Y) = Y .
+    eq ssum2(s(X),Y) = ssum2(X,s(X) + Y) .
+}
+
+-- Associativity of _+_ --
+open PNAT1 .
+-- fresh constants
+ops y z : -> PNat .
+-- check
+red (0 + y) + z = 0 + (y + z) .
+close
+
+open PNAT1 .
+-- fresh constants
+ops x y z : -> PNat .
+-- IH
+eq (x + y) + z = x + (y + z) .
+-- check
+red (s(x) + y) + z = s(x) + (y + z) .
+close
+
+
+-- Commutativity of _+_ --
+open PNAT1 .
+-- check
+red 0 + 0 = 0 .
+close
+
+open PNAT1 .
+-- fresh constants
+op x : -> PNat .
+-- IH
+eq x + 0 = x .
+-- check
+red s(x) + 0 = s(x) .
+close
+
+open PNAT1 .
+-- fresh constants
+op y : -> PNat .
+-- check
+red 0 + s(y) = s(0 + y) .
+close
+
+open PNAT1 .
+-- fresh constants
+ops x y : -> PNat .
+-- IH
+eq x + s(y) = s(x + y) .
+-- check
+red s(x) + s(y) = s(s(x) + y) .
+close
+
+open PNAT1 .
+-- fresh constants
+op y : -> PNat .
+-- lemmas
+eq X + 0 = X . -- (rz+)
+-- check
+red 0 + y = y + 0 .
+close
+
+open PNAT1 .
+-- fresh constants
+ops x y : -> PNat .
+-- lemmas
+eq X + s(Y) = s(X + Y) . -- (rs+)
+-- IH
+eq x + Y = Y + x .
+-- check
+red s(x) + y = y + s(x) .
+close
+
+mod! PNAT2 {
+    pr(PNAT1)
+    op _+_ : PNat PNat -> PNat {assoc comm} .
+    vars X Y Z : PNat .
+}
+
+-- Associativity of _*_ --
+open PNAT2 .
+-- fresh constants
+ops y z : -> PNat .
+-- check
+red (0 + y) * z = (0 * z) + (y * z) .
+close
+
+open PNAT2 .
+-- fresh constants
+ops x y z : -> PNat .
+-- IH
+eq (x + Y) * Z = (x * Z) + (Y * Z) .
+-- check
+red (s(x) + y) * z = (s(x) * z) + (y * z) .
+close
+
+-- Commutativity of _*_ --
+open PNAT2 .
+-- check
+red 0 * 0 = 0 .
+close
+
+open PNAT2 .
+-- fresh constants
+op x : -> PNat .
+-- IH
+eq x * 0 = 0 .
+-- check
+red s(x) * 0 = 0 .
+close
+
+open PNAT2 .
+-- fresh constants
+op y : -> PNat .
+-- check
+red 0 * s(y) = (0 * y) + 0 .
+close
+
+open PNAT2 .
+-- fresh constants
+ops x y : -> PNat .
+-- IH
+eq x * s(Y) = (x * Y) + x .
+-- check
+red s(x) * s(y) = (s(x) * y) + s(x) .
+close
+
+mod! PNAT3 {
+    pr(PNAT2)
+    op _*_ : PNat PNat -> PNat {assoc comm} .
+    vars X Y Z : PNat .
+}
+
+-- Correctness of a Tail Recursive Factorial --
+open PNAT3 .
+-- fresh constants
+ops y z : -> PNat .
+-- check
+red y * sfact2(0,z) = sfact2(0,y * z) .
+close
+
+open PNAT3 .
+-- fresh constants
+ops x y z : -> PNat .
+-- lemmas
+eq (X + Y) * Z = (X * Z) + (Y * Z) . -- (d*o+)
+-- IH
+eq Y * sfact2(x,Z) = sfact2(x,Y * Z) .
+-- check
+red y * sfact2(s(x),z) = sfact2(s(x),y * z) .
+close
+
+open PNAT3 .
+-- check
+red fact1(0) = fact2(0) .
+close
+
+open PNAT3 .
+-- fresh constants
+op x : -> PNat .
+-- lemmas
+eq Y * sfact2(X,Z) = sfact2(X,Y * Z) . -- (sf2-p)
+-- IH
+eq fact1(x) = fact2(x) .
+-- check
+red fact1(s(x)) = fact2(s(x)) .
+close

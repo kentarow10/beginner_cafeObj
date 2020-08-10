@@ -1,0 +1,114 @@
+***
+*** Loop {
+***      Remainder Section
+***  rs: atomic_enqueue(queue,i);
+***  ws: repeat until top(queue) = i;
+***      Critical Section
+***  cs: tmp := dequeue(queue);
+***  ds: queue := tmp
+*** }
+***
+
+fmod LABEL is
+  sort Label .
+  ops rs ws cs ds : -> Label [ctor] .
+endfm
+
+fmod PID is
+  sort Pid .
+  ops p1 p2 : -> Pid [ctor] .
+endfm
+
+fmod  QUEUE is
+  pr PID .
+  sort Queue .
+  op empty : -> Queue [ctor] .
+  op __ : Pid Queue -> Queue [ctor] .
+  op enq : Queue Pid -> Queue .
+  op deq : Queue -> Queue .
+  var Q : Queue .
+  vars X Y : Pid .
+  eq enq(empty,X) = X empty .
+  eq enq((Y Q),X) = Y enq(Q,X) .
+  eq deq(empty) = empty .
+  eq deq((X Q)) = Q .
+endfm
+
+mod FQLOCK1 is
+  pr LABEL .
+  pr PID .
+  pr QUEUE .
+  sorts Val Sys .
+  subsorts Val < Sys .
+*** Configurations
+  *** op none : -> Sys [ctor] .
+  *** op __ : Sys Sys -> Sys [ctor assoc comm id: none] .
+  op __ : Sys Sys -> Sys [ctor assoc comm] .
+*** Variables
+  op pc[_]:_ : Pid Label -> Val [ctor] .
+  op queue:_ : Queue -> Val [ctor] .
+  op tmp[_]:_ : Pid Queue -> Val [ctor] .
+*** Maude variables
+  vars Q R : Queue .
+  var I : Pid .
+  var S : Sys .
+*** Rules
+  rl [eq] : (pc[I]: rs) (queue: Q) => (pc[I]: ws) (queue: enq(Q,I)) .
+  rl [wt] : (pc[I]: ws) (queue: (I Q)) => (pc[I]: cs) (queue: (I Q)) .
+  rl [dq1] : (pc[I]: cs) (queue: Q) (tmp[I]: R) => (pc[I]: ds) (queue: Q) (tmp[I]: deq(Q)) .
+  rl [dq2] : (pc[I]: ds) (queue: Q) (tmp[I]: R) => (pc[I]: rs) (queue: R) (tmp[I]: R) .
+*** Initial state
+  op init : -> Sys .
+  eq init = (pc[p1]: rs) (pc[p2]: rs) (queue: empty) (tmp[p1]: empty) (tmp[p2]: empty) .
+endm
+
+***
+*** search [1] in FQLOCK1 : init =>* (pc[p1]: cs) (pc[p2]: cs) S .
+***
+
+***
+*** search [1] in FQLOCK1 : init =>* S such that false .
+*** terminating meaning that the number of reachable states is bounded
+*** and morevover small enough.
+***
+
+***
+*** search [1] in FQLOCK1 : init =>! S .
+*** no solutions meaning that there is no deadlock state and equally
+*** the binary relation over states is total
+***
+
+in model-checker .
+
+mod FQLOCK1-PREDS is
+  pr FQLOCK1 .
+  inc SATISFACTION .
+  subsort Sys < State .
+  op wait : Pid -> Prop .
+  op crit : Pid -> Prop .
+  var P : Pid .
+  var S : Sys .
+  var PROP : Prop .
+  eq (pc[P] : ws) S |= wait(P) = true .
+  eq (pc[P] : cs) S |= crit(P) = true .
+  eq S |= PROP = false [owise] .
+endm
+
+mod FQLOCK1-CHECK is
+  inc FQLOCK1-PREDS .
+  inc MODEL-CHECKER .
+  inc LTL-SIMPLIFIER .
+  ops mutex lofree : -> Formula .
+  eq mutex = ([] ~(crit(p1) /\ crit(p2))) .
+  eq lofree = (wait(p1) |-> crit(p1)) /\ (wait(p2) |-> crit(p2)) .
+endm
+
+*** 
+*** red in FQLOCK1-CHECK : modelCheck(init,mutex) .
+*** red in FQLOCK1-CHECK : modelCheck(init,lofree) .
+***
+
+*** 
+*** search [1] in FQLOCK1 : init =>* (queue: empty) (pc[p1]: ws) (pc[p2]: rs) (tmp[p1]: p2 empty) (tmp[p2]: empty) .
+*** show path 40 .
+*** 

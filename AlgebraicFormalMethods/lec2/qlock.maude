@@ -1,0 +1,101 @@
+***
+*** Loop {
+***      Remainder Section
+***  rs: atomic_enqueue(queue,i);
+***  ws: repeat until top(queue) = i;
+***      Critical Section
+***  cs: tmp := dequeue(queue);
+***  ds: queue := tmp
+*** }
+***
+
+fmod LABEL is
+  sort Label .
+  ops rs ws cs : -> Label [ctor] .
+endfm
+
+fmod PID is
+  sort Pid .
+  ops p1 p2 : -> Pid [ctor] .
+endfm
+
+fmod  QUEUE is
+  pr PID .
+  sort Queue .
+  op empty : -> Queue [ctor] .
+  op __ : Pid Queue -> Queue [ctor] .
+  op enq : Queue Pid -> Queue .
+  op deq : Queue -> Queue .
+  var Q : Queue .
+  vars X Y : Pid .
+  eq enq(empty,X) = X empty .
+  eq enq((Y Q),X) = Y enq(Q,X) .
+  eq deq(empty) = empty .
+  eq deq((X Q)) = Q .
+endfm
+
+mod QLOCK is
+  pr LABEL .
+  pr PID .
+  pr QUEUE .
+  sorts OComp Sys .
+  subsorts OComp < Sys .
+*** Configurations
+  *** op none : -> Sys [ctor] .
+  *** op __ : Sys Sys -> Sys [ctor assoc comm id: none] .
+  op __ : Sys Sys -> Sys [ctor assoc comm] .
+*** OComp
+  op pc[_]:_ : Pid Label -> OComp [ctor] .
+  op queue:_ : Queue -> OComp [ctor] .
+*** Maude variables
+  var Q : Queue .
+  var I : Pid .
+  var S : Sys .
+*** Rules
+  rl [eq] : (pc[I]: rs) (queue: Q) => (pc[I]: ws) (queue: enq(Q,I)) .
+  rl [wt] : (pc[I]: ws) (queue: (I Q)) => (pc[I]: cs) (queue: (I Q)) .
+  rl [dq] : (pc[I]: cs) (queue: Q) => (pc[I]: rs) (queue: deq(Q)) .
+*** Initial state
+  op init : -> Sys .
+  eq init = (pc[p1]: rs) (pc[p2]: rs) (queue: empty) .
+endm
+
+***
+*** search [1] in QLOCK : init =>* (pc[p1]: cs) (pc[p2]: cs) S .
+***
+
+***
+*** search [1] in QLOCK : init =>! S .
+*** no solutions meaning that there is no deadlock state and equally
+*** the binary relation over states is total
+***
+
+in model-checker .
+
+mod QLOCK-PREDS is
+  pr QLOCK .
+  inc SATISFACTION .
+  subsort Sys < State .
+  op wait : Pid -> Prop .
+  op crit : Pid -> Prop .
+  var P : Pid .
+  var S : Sys .
+  var PROP : Prop .
+  eq (pc[P] : ws) S |= wait(P) = true .
+  eq (pc[P] : cs) S |= crit(P) = true .
+  eq S |= PROP = false [owise] .
+endm
+
+mod QLOCK-CHECK is
+  inc QLOCK-PREDS .
+  inc MODEL-CHECKER .
+  inc LTL-SIMPLIFIER .
+  ops mutex lofree : -> Formula .
+  eq mutex = ([] ~(crit(p1) /\ crit(p2))) .
+  eq lofree = (wait(p1) |-> crit(p1)) /\ (wait(p2) |-> crit(p2)) .
+endm
+
+*** 
+*** red in QLOCK-CHECK : modelCheck(init,mutex) .
+*** red in QLOCK-CHECK : modelCheck(init,lofree) .
+***
